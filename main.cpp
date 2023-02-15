@@ -1,5 +1,6 @@
 #include <iostream>
 #include <graphics.h>
+#include "window_logic.hpp"
 
 struct Point {
     short x{};

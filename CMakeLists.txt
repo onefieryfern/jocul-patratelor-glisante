@@ -3,7 +3,7 @@ project(jocul_patratelor_glisante)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(jocul_patratelor_glisante main.cpp)
+add_executable(jocul_patratelor_glisante main.cpp window_logic.cpp window_logic.hpp)
 
 target_include_directories(jocul_patratelor_glisante PRIVATE "C:/winbgim")
 target_link_directories(jocul_patratelor_glisante PRIVATE "C:/winbgim")
