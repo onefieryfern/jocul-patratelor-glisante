@@ -18,7 +18,7 @@ short readWithValidation (short minIncl, short maxIncl) {
 
 int main() {
     // Read data
-    std::cout << "Window Properties: ";
+    std::cout << "--- Window Properties ---\n";
 
     std::cout << "X Axis [0 - 1280]: ";
     const short xAxisLength { readWithValidation(0, 1280) };
@@ -56,12 +56,26 @@ int main() {
     // Draw title placeholder
     rectangle(titlePadding, titlePadding, xAxisLength - titlePadding, verticalTitleSize + titlePadding);
 
+    /*
     Point boardTopLeft { static_cast<short>((xAxisLength - boardSize) / 2), static_cast<short>((titlePadding + verticalTitleSize + boardPadding)) };
 
     for (short rowNum { 1 }; rowNum <= numOfTilesOnSide; rowNum++) {
         for (short colNum { 1 }; colNum <= numOfTilesOnSide; colNum++) {
             Point topLeft { static_cast<short>(boardTopLeft.x + (colNum - 1) * tileSize), static_cast<short>(boardTopLeft.y + (rowNum - 1) * tileSize) };
             Point bottomRight { static_cast<short>(boardTopLeft.x + colNum * tileSize), static_cast<short>(boardTopLeft.y + rowNum * tileSize) };
+
+            // Draw tile
+            rectangle(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
+        }
+    }
+     */
+
+    Point boardTopLeft { static_cast<short>((xAxisLength - maxBoardSize) / 2), static_cast<short>((titlePadding + verticalTitleSize + minBoardPadding)) };
+
+    for (short rowNum { 1 }; rowNum <= numOfTilesOnSide; rowNum++) {
+        for (short colNum { 1 }; colNum <= numOfTilesOnSide; colNum++) {
+            Point topLeft { static_cast<short>(boardTopLeft.x + (colNum - 1) * maxTileSize), static_cast<short>(boardTopLeft.y + (rowNum - 1) * maxTileSize) };
+            Point bottomRight { static_cast<short>(boardTopLeft.x + colNum * maxTileSize), static_cast<short>(boardTopLeft.y + rowNum * maxTileSize) };
 
             // Draw tile
             rectangle(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
