@@ -7,6 +7,28 @@ struct Point {
     short y{};
 };
 
+struct TitleProperties {
+    short totalVerticalSize { 100 };
+    short outsidePadding { 20 };
+    short insidePadding { 5 };
+    
+    short verticalTextSpace{};
+    short horizontalTextSpace{};
+};
+
+TitleProperties initTitleProperties (short verticalSize, short outsidePadding, short insidePadding, short xAxisLength) {
+    TitleProperties titleProperties{};
+    
+    titleProperties.totalVerticalSize = verticalSize;
+    titleProperties.outsidePadding = outsidePadding;
+    titleProperties.insidePadding = insidePadding;
+    
+    titleProperties.verticalTextSpace = static_cast<short>(verticalSize - 2 * titleProperties.insidePadding);
+    titleProperties.horizontalTextSpace = static_cast<short>((xAxisLength - 2 * titleProperties.outsidePadding) - 2 * titleProperties.insidePadding);
+    
+    return titleProperties;
+}
+
 short readWithValidation (short minIncl, short maxIncl) {
     short data{};
 
@@ -18,47 +40,68 @@ short readWithValidation (short minIncl, short maxIncl) {
 }
 
 int main() {
-    // Read data
-    std::cout << "--- Window Properties ---\n";
-
-    std::cout << "X Axis [0 - 1280]: ";
-    const short xAxisLength { readWithValidation(0, 1280) };
-    std::cout << "Y Axis [0 - 720]: ";
-    const short yAxisLength { readWithValidation(0 , 720) };
-
     // Window Properties
+    constexpr short xAxisLength { 1280 };
+    constexpr short yAxisLength { 720 };
     constexpr char title[] { "Jocul Patratelor Glisante" };
 
     // Title Properties
-    const short verticalTitleSize { 100 };
-    constexpr short titlePadding { 20 };
+    const TitleProperties titleProperties { initTitleProperties(100, 20, 5, xAxisLength) };
 
     // Board Properties
     constexpr short numOfTilesOnSide { 5 };
 
+/*
     const short tileSize { 80 };
 
     const short boardSize { numOfTilesOnSide * tileSize };
-    const short boardPadding { static_cast<short>((yAxisLength - (titlePadding + verticalTitleSize) - boardSize) / 2) };
+    const short boardPadding { static_cast<short>((yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize) - boardSize) / 2) };
+*/
 
     // Other setup
-    const short minBoardPadding { titlePadding };
-    const short maxBoardSize { static_cast<short>(yAxisLength - (titlePadding + verticalTitleSize + 2 * minBoardPadding)) };
+    const short minBoardPadding { titleProperties.outsidePadding };
+    const short maxBoardSize { static_cast<short>(yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize + 2 * minBoardPadding)) };
     const short maxTileSize { static_cast<short>(maxBoardSize / numOfTilesOnSide) };
 
-    const short minTileSize { static_cast<short>(yAxisLength <= xAxisLength ? yAxisLength / 9 : xAxisLength / 16) };
+    const short minTileSize { 80 };
     const short minBoardSize { static_cast<short>(numOfTilesOnSide * minTileSize) };
-    const short maxBoardPadding { static_cast<short>((yAxisLength - (titlePadding + verticalTitleSize) - minBoardSize) / 2) };
+    const short maxBoardPadding { static_cast<short>((yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize) - minBoardSize) / 2) };
 
     //
     initwindow(xAxisLength, yAxisLength, title);
     std::cout << "Window has been created!\n";
 
-    // Draw title placeholder
-    rectangle(titlePadding, titlePadding, xAxisLength - titlePadding, verticalTitleSize + titlePadding);
+    // Draw title
+    rectangle(titleProperties.outsidePadding, titleProperties.outsidePadding, xAxisLength - titleProperties.outsidePadding, titleProperties.totalVerticalSize + titleProperties.outsidePadding);
+
+    constexpr short maxCharSize { 10 };
+    constexpr short charSizePixels { 8 };
+
+    short maxTitleCharSize{ 1 };
+    textsettingstype textSettings{};
+    gettextsettings(&textSettings);
+    for (short i = 1; i <= maxCharSize; i++) {
+        settextstyle(SANS_SERIF_FONT, HORIZ_DIR, i);
+
+        if (textheight(const_cast<char*>(title)) <= (titleProperties.totalVerticalSize - 2 * titleProperties.insidePadding)) {
+            maxTitleCharSize = i;
+        }
+        else {
+            break;
+        }
+    }
+    settextstyle(textSettings.font, textSettings.direction, textSettings.charsize);
+
+    settextstyle(SANS_SERIF_FONT, HORIZ_DIR, maxTitleCharSize);
+
+    //
+    Point titleTopLeft {};
+    titleTopLeft.x = static_cast<short>(titleProperties.outsidePadding + titleProperties.insidePadding + (titleProperties.horizontalTextSpace - textwidth(const_cast<char*>(title))) / 2);
+    titleTopLeft.y = static_cast<short>(titleProperties.outsidePadding + titleProperties.insidePadding + (titleProperties.verticalTextSpace - textheight(const_cast<char*>(title))) / 2);
+    outtextxy(titleTopLeft.x, titleTopLeft.y, const_cast<char*>(title));
 
     /*
-    Point boardTopLeft { static_cast<short>((xAxisLength - boardSize) / 2), static_cast<short>((titlePadding + verticalTitleSize + boardPadding)) };
+    Point boardTopLeft { static_cast<short>((xAxisLength - boardSize) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + boardPadding)) };
 
     for (short rowNum { 1 }; rowNum <= numOfTilesOnSide; rowNum++) {
         for (short colNum { 1 }; colNum <= numOfTilesOnSide; colNum++) {
@@ -71,7 +114,7 @@ int main() {
     }
      */
 
-    Point boardTopLeft { static_cast<short>((xAxisLength - maxBoardSize) / 2), static_cast<short>((titlePadding + verticalTitleSize + minBoardPadding)) };
+    Point boardTopLeft { static_cast<short>((xAxisLength - maxBoardSize) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + minBoardPadding)) };
 
     for (short rowNum { 1 }; rowNum <= numOfTilesOnSide; rowNum++) {
         for (short colNum { 1 }; colNum <= numOfTilesOnSide; colNum++) {
