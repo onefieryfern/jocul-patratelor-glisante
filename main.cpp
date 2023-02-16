@@ -27,6 +27,7 @@ struct BoardProperties {
 
 struct PieceProperties {
     Point topLeft{};
+    Point centre{};
     short size{};
 
     fillsettingstype fillSettings{};
@@ -54,9 +55,12 @@ BoardProperties initBoardProperties (short numOfTilesOnSide, short tileSize, sho
 }
 
 PieceProperties initPieceProperties (Point topLeft, fillsettingstype fillSettings, BoardProperties boardProperties) {
-    PieceProperties pieceProperties { .topLeft = topLeft, .fillSettings = fillSettings };
+    PieceProperties pieceProperties { .fillSettings = fillSettings };
 
     pieceProperties.size = static_cast<short>(boardProperties.tileSize - 2 * boardProperties.tilePadding);
+
+    pieceProperties.topLeft = { static_cast<short>(topLeft.x + boardProperties.tilePadding), static_cast<short>(topLeft.y + boardProperties.tilePadding) };
+    pieceProperties.centre = { static_cast<short>(pieceProperties.topLeft.x + pieceProperties.size / 2), static_cast<short>(pieceProperties.topLeft.y + pieceProperties.size / 2) };
 
     return pieceProperties;
 }
@@ -72,7 +76,6 @@ short readWithValidation (short minIncl, short maxIncl) {
 }
 
 void drawPiece (PieceProperties pieceProperties) {
-    Point centre = { 50, 50 };
     auto radius { static_cast<short>(pieceProperties.size / 2) };
 
     auto currentColour = static_cast<colors>(getcolor());
@@ -82,7 +85,7 @@ void drawPiece (PieceProperties pieceProperties) {
     setcolor(pieceProperties.fillSettings.color);
     setfillstyle(pieceProperties.fillSettings.pattern, pieceProperties.fillSettings.color);
 
-    fillellipse(centre.x, centre.y, radius, radius);
+    fillellipse(pieceProperties.centre.x, pieceProperties.centre.y, radius, radius);
 
     setcolor(currentColour);
     setfillstyle(currentFillSettings.pattern, currentFillSettings.color);
@@ -172,6 +175,8 @@ int main() {
 
             // Draw tile
             rectangle(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
+
+            drawPiece(initPieceProperties(topLeft, { SOLID_FILL, LIGHTBLUE }, initBoardProperties(largestBoard.numOfTilesOnSide, largestBoard.tileSize, largestBoard.padding, 4)));
         }
     }
 
