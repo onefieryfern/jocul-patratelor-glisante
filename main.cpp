@@ -16,6 +16,22 @@ struct TitleProperties {
     short horizontalTextSpace{};
 };
 
+struct BoardProperties {
+    short boardSize{};
+    short numOfTilesOnSide{};
+    short tileSize{};
+    short tilePadding{};
+
+    short padding{};
+};
+
+struct PieceProperties {
+    Point topLeft{};
+    short size{};
+
+    fillsettingstype fillSettings{};
+};
+
 TitleProperties initTitleProperties (short verticalSize, short outsidePadding, short insidePadding, short xAxisLength) {
     TitleProperties titleProperties{};
     
@@ -29,6 +45,22 @@ TitleProperties initTitleProperties (short verticalSize, short outsidePadding, s
     return titleProperties;
 }
 
+BoardProperties initBoardProperties (short numOfTilesOnSide, short tileSize, short tilePadding, short padding) {
+    BoardProperties boardProperties { .numOfTilesOnSide = numOfTilesOnSide, .tileSize = tileSize, .tilePadding = tilePadding, .padding = padding };
+
+    boardProperties.boardSize = static_cast<short>(numOfTilesOnSide * tileSize);
+
+    return boardProperties;
+}
+
+PieceProperties initPieceProperties (Point topLeft, fillsettingstype fillSettings, BoardProperties boardProperties) {
+    PieceProperties pieceProperties { .topLeft = topLeft, .fillSettings = fillSettings };
+
+    pieceProperties.size = static_cast<short>(boardProperties.tileSize - 2 * boardProperties.tilePadding);
+
+    return pieceProperties;
+}
+
 short readWithValidation (short minIncl, short maxIncl) {
     short data{};
 
@@ -37,6 +69,23 @@ short readWithValidation (short minIncl, short maxIncl) {
     } while (data < minIncl || data > maxIncl);
 
     return data;
+}
+
+void drawPiece (PieceProperties pieceProperties) {
+    Point centre = { 50, 50 };
+    auto radius { static_cast<short>(pieceProperties.size / 2) };
+
+    auto currentColour = static_cast<colors>(getcolor());
+    fillsettingstype currentFillSettings{};
+    getfillsettings(&currentFillSettings);
+
+    setcolor(pieceProperties.fillSettings.color);
+    setfillstyle(pieceProperties.fillSettings.pattern, pieceProperties.fillSettings.color);
+
+    fillellipse(centre.x, centre.y, radius, radius);
+
+    setcolor(currentColour);
+    setfillstyle(currentFillSettings.pattern, currentFillSettings.color);
 }
 
 int main() {
@@ -125,6 +174,8 @@ int main() {
             rectangle(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
         }
     }
+
+    // drawPiece(initPieceProperties( {70, 70}, { SOLID_FILL, LIGHTBLUE }, initBoardProperties(numOfTilesOnSide, maxTileSize, minBoardPadding, 4) ));
 
     getch();
     closegraph();
