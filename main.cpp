@@ -23,9 +23,13 @@ struct BoardProperties {
     short tileSize{};
     short tilePadding{};
 
-    Point topLeft{}; // { static_cast<short>((xAxisLength - maxBoardSize) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + minBoardPadding)) };
-
     short padding{};
+};
+
+struct Board {
+    BoardProperties properties{};
+
+    Point topLeft{};
 };
 
 struct PieceProperties {
@@ -59,6 +63,14 @@ BoardProperties initBoardProperties (short numOfTilesOnSide, short tileSize, sho
     return boardProperties;
 }
 
+Board initBoard (BoardProperties boardProperties, TitleProperties titleProperties, short xAxisLength) {
+    Board board { .properties = boardProperties };
+
+    board.topLeft = { static_cast<short>((xAxisLength - boardProperties.size) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + boardProperties.padding)) };
+
+    return board;
+}
+
 PieceProperties initPieceProperties (Point topLeft, fillsettingstype fillSettings, BoardProperties boardProperties) {
     PieceProperties pieceProperties { .fillSettings = fillSettings };
 
@@ -68,16 +80,6 @@ PieceProperties initPieceProperties (Point topLeft, fillsettingstype fillSetting
     pieceProperties.centre = { static_cast<short>(pieceProperties.topLeft.x + pieceProperties.size / 2), static_cast<short>(pieceProperties.topLeft.y + pieceProperties.size / 2) };
 
     return pieceProperties;
-}
-
-short readWithValidation (short minIncl, short maxIncl) {
-    short data{};
-
-    do {
-        std::cin >> data;
-    } while (data < minIncl || data > maxIncl);
-
-    return data;
 }
 
 void drawPiece (PieceProperties pieceProperties) {
@@ -96,18 +98,41 @@ void drawPiece (PieceProperties pieceProperties) {
     setfillstyle(currentFillSettings.pattern, currentFillSettings.color);
 }
 
-void drawBoard (BoardProperties boardProperties, Point topLeft) {
-    for (short rowNum { 1 }; rowNum <= boardProperties.numOfTilesOnSide; rowNum++) {
-        for (short colNum { 1 }; colNum <= boardProperties.numOfTilesOnSide; colNum++) {
-            Point tileTopLeft { static_cast<short>(topLeft.x + (colNum - 1) * boardProperties.tileSize), static_cast<short>(topLeft.y + (rowNum - 1) * boardProperties.tileSize) };
-            Point tileBottomRight { static_cast<short>(topLeft.x + colNum * boardProperties.tileSize), static_cast<short>(topLeft.y + rowNum * boardProperties.tileSize) };
+void drawBoard (Board board) {
+    for (short rowNum { 1 }; rowNum <= board.properties.numOfTilesOnSide; rowNum++) {
+        for (short colNum { 1 }; colNum <= board.properties.numOfTilesOnSide; colNum++) {
+            Point tileTopLeft {static_cast<short>(board.topLeft.x + (colNum - 1) * board.properties.tileSize), static_cast<short>(board.topLeft.y + (rowNum - 1) * board.properties.tileSize) };
+            Point tileBottomRight {static_cast<short>(board.topLeft.x + colNum * board.properties.tileSize), static_cast<short>(board.topLeft.y + rowNum * board.properties.tileSize) };
 
             // Draw tile
             rectangle(tileTopLeft.x, tileTopLeft.y, tileBottomRight.x, tileBottomRight.y);
 
-            drawPiece(initPieceProperties(tileTopLeft, {SOLID_FILL, LIGHTBLUE }, initBoardProperties(boardProperties.numOfTilesOnSide, boardProperties.tileSize, boardProperties.padding, 4)));
+            drawPiece(initPieceProperties(tileTopLeft, {SOLID_FILL, LIGHTBLUE }, initBoardProperties(board.properties.numOfTilesOnSide, board.properties.tileSize, board.properties.padding, 4)));
         }
     }
+}
+
+short getMaxTitleSize (const char* title, TitleProperties titleProperties, textsettingstype textSettings) {
+    constexpr short maxCharSize { 10 };
+
+    textsettingstype initialTextSettings{};
+    gettextsettings(&initialTextSettings);
+
+    short maxTitleCharSize{ 1 };
+    for (short i = 1; i <= maxCharSize; i++) {
+        settextstyle(textSettings.font, textSettings.direction, i);
+
+        if (textheight(const_cast<char*>(title)) <= (titleProperties.totalVerticalSize - 2 * titleProperties.insidePadding)) {
+            maxTitleCharSize = i;
+        }
+        else {
+            break;
+        }
+    }
+
+    settextstyle(initialTextSettings.font, initialTextSettings.direction, initialTextSettings.charsize);
+
+    return maxTitleCharSize;
 }
 
 int main() {
@@ -122,13 +147,6 @@ int main() {
     // Board Properties
     constexpr short numOfTilesOnSide { 5 };
 
-/*
-    const short tileSize { 80 };
-
-    const short boardSize { numOfTilesOnSide * tileSize };
-    const short boardPadding { static_cast<short>((yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize) - boardSize) / 2) };
-*/
-
     // Other setup
     const short minBoardPadding { titleProperties.outsidePadding };
     const short maxBoardSize { static_cast<short>(yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize + 2 * minBoardPadding)) };
@@ -138,74 +156,35 @@ int main() {
     const short minBoardSize { static_cast<short>(numOfTilesOnSide * minTileSize) };
     const short maxBoardPadding { static_cast<short>((yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize) - minBoardSize) / 2) };
 
-    const BoardProperties smallestBoard { initBoardProperties(numOfTilesOnSide, minTileSize, 4, maxBoardPadding) };
-    const BoardProperties largestBoard { initBoardProperties(numOfTilesOnSide, maxTileSize, 4, minBoardPadding) };
+    const Board smallestBoard { initBoard(initBoardProperties(numOfTilesOnSide, minTileSize, 4, maxBoardPadding), titleProperties, xAxisLength) };
+    const Board largestBoard { initBoard(initBoardProperties(numOfTilesOnSide, maxTileSize, 4, minBoardPadding), titleProperties, xAxisLength) };
 
-    //
+    /*
+    const short tileSize { 80 };
+
+    const short boardSize { numOfTilesOnSide * tileSize };
+    const short boardPadding { static_cast<short>((yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize) - boardSize) / 2) };
+*/
+
+    // Create window
     initwindow(xAxisLength, yAxisLength, title);
     std::cout << "Window has been created!\n";
 
     // Draw title
-    rectangle(titleProperties.outsidePadding, titleProperties.outsidePadding, xAxisLength - titleProperties.outsidePadding, titleProperties.totalVerticalSize + titleProperties.outsidePadding);
+    // rectangle(titleProperties.outsidePadding, titleProperties.outsidePadding, xAxisLength - titleProperties.outsidePadding, titleProperties.totalVerticalSize + titleProperties.outsidePadding);
 
-    constexpr short maxCharSize { 10 };
-    constexpr short charSizePixels { 8 };
+    textsettingstype textSettings { .font = SANS_SERIF_FONT, .direction = HORIZ_DIR };
+    short maxTitleCharSize{ getMaxTitleSize(title, titleProperties, textSettings) };
 
-    short maxTitleCharSize{ 1 };
-    textsettingstype textSettings{};
-    gettextsettings(&textSettings);
-    for (short i = 1; i <= maxCharSize; i++) {
-        settextstyle(SANS_SERIF_FONT, HORIZ_DIR, i);
+    settextstyle(textSettings.font, textSettings.direction, maxTitleCharSize);
 
-        if (textheight(const_cast<char*>(title)) <= (titleProperties.totalVerticalSize - 2 * titleProperties.insidePadding)) {
-            maxTitleCharSize = i;
-        }
-        else {
-            break;
-        }
-    }
-    settextstyle(textSettings.font, textSettings.direction, textSettings.charsize);
-
-    settextstyle(SANS_SERIF_FONT, HORIZ_DIR, maxTitleCharSize);
-
-    //
     Point titleTopLeft {};
     titleTopLeft.x = static_cast<short>(titleProperties.outsidePadding + titleProperties.insidePadding + (titleProperties.horizontalTextSpace - textwidth(const_cast<char*>(title))) / 2);
     titleTopLeft.y = static_cast<short>(titleProperties.outsidePadding + titleProperties.insidePadding + (titleProperties.verticalTextSpace - textheight(const_cast<char*>(title))) / 2);
     outtextxy(titleTopLeft.x, titleTopLeft.y, const_cast<char*>(title));
 
-    /*
-    Point boardTopLeft { static_cast<short>((xAxisLength - boardSize) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + boardPadding)) };
-
-    for (short rowNum { 1 }; rowNum <= numOfTilesOnSide; rowNum++) {
-        for (short colNum { 1 }; colNum <= numOfTilesOnSide; colNum++) {
-            Point topLeft { static_cast<short>(boardTopLeft.x + (colNum - 1) * tileSize), static_cast<short>(boardTopLeft.y + (rowNum - 1) * tileSize) };
-            Point bottomRight { static_cast<short>(boardTopLeft.x + colNum * tileSize), static_cast<short>(boardTopLeft.y + rowNum * tileSize) };
-
-            // Draw tile
-            rectangle(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
-        }
-    }
-     */
-
-    Point boardTopLeft {static_cast<short>((xAxisLength - largestBoard.size) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + largestBoard.padding)) };
-    drawBoard(largestBoard, boardTopLeft);
-
-    /*
-    for (short rowNum { 1 }; rowNum <= largestBoard.numOfTilesOnSide; rowNum++) {
-        for (short colNum { 1 }; colNum <= largestBoard.numOfTilesOnSide; colNum++) {
-            Point topLeft { static_cast<short>(boardTopLeft.x + (colNum - 1) * largestBoard.tileSize), static_cast<short>(boardTopLeft.y + (rowNum - 1) * largestBoard.tileSize) };
-            Point bottomRight { static_cast<short>(boardTopLeft.x + colNum * largestBoard.tileSize), static_cast<short>(boardTopLeft.y + rowNum * largestBoard.tileSize) };
-
-            // Draw tile
-            rectangle(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
-
-            drawPiece(initPieceProperties(topLeft, { SOLID_FILL, LIGHTBLUE }, initBoardProperties(largestBoard.numOfTilesOnSide, largestBoard.tileSize, largestBoard.padding, 4)));
-        }
-    }
-     */
-
-    // drawPiece(initPieceProperties( {70, 70}, { SOLID_FILL, LIGHTBLUE }, initBoardProperties(numOfTilesOnSide, maxTileSize, minBoardPadding, 4) ));
+    // Draw board
+    drawBoard(largestBoard);
 
     getch();
     closegraph();
