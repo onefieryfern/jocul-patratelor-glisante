@@ -96,8 +96,18 @@ void drawPiece (PieceProperties pieceProperties) {
     setfillstyle(currentFillSettings.pattern, currentFillSettings.color);
 }
 
-void drawBoard () {
-    ;
+void drawBoard (BoardProperties boardProperties, Point topLeft) {
+    for (short rowNum { 1 }; rowNum <= boardProperties.numOfTilesOnSide; rowNum++) {
+        for (short colNum { 1 }; colNum <= boardProperties.numOfTilesOnSide; colNum++) {
+            Point tileTopLeft { static_cast<short>(topLeft.x + (colNum - 1) * boardProperties.tileSize), static_cast<short>(topLeft.y + (rowNum - 1) * boardProperties.tileSize) };
+            Point tileBottomRight { static_cast<short>(topLeft.x + colNum * boardProperties.tileSize), static_cast<short>(topLeft.y + rowNum * boardProperties.tileSize) };
+
+            // Draw tile
+            rectangle(tileTopLeft.x, tileTopLeft.y, tileBottomRight.x, tileBottomRight.y);
+
+            drawPiece(initPieceProperties(tileTopLeft, {SOLID_FILL, LIGHTBLUE }, initBoardProperties(boardProperties.numOfTilesOnSide, boardProperties.tileSize, boardProperties.padding, 4)));
+        }
+    }
 }
 
 int main() {
@@ -179,7 +189,9 @@ int main() {
      */
 
     Point boardTopLeft {static_cast<short>((xAxisLength - largestBoard.size) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + largestBoard.padding)) };
+    drawBoard(largestBoard, boardTopLeft);
 
+    /*
     for (short rowNum { 1 }; rowNum <= largestBoard.numOfTilesOnSide; rowNum++) {
         for (short colNum { 1 }; colNum <= largestBoard.numOfTilesOnSide; colNum++) {
             Point topLeft { static_cast<short>(boardTopLeft.x + (colNum - 1) * largestBoard.tileSize), static_cast<short>(boardTopLeft.y + (rowNum - 1) * largestBoard.tileSize) };
@@ -191,6 +203,7 @@ int main() {
             drawPiece(initPieceProperties(topLeft, { SOLID_FILL, LIGHTBLUE }, initBoardProperties(largestBoard.numOfTilesOnSide, largestBoard.tileSize, largestBoard.padding, 4)));
         }
     }
+     */
 
     // drawPiece(initPieceProperties( {70, 70}, { SOLID_FILL, LIGHTBLUE }, initBoardProperties(numOfTilesOnSide, maxTileSize, minBoardPadding, 4) ));
 
