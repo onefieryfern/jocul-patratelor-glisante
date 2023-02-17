@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <graphics.h>
 #include "window_logic.hpp"
 
@@ -7,13 +8,28 @@ struct Point {
     short y{};
 };
 
-struct TitleProperties {
-    short totalVerticalSize { 100 };
-    short outsidePadding { 20 };
-    short insidePadding { 5 };
+struct Window {
+    short xAxisLength{};
+    short yAxisLength{};
+    std::string title{};
+};
+
+struct TitleBox {
+    short totalVerticalSize{};
+    short outsidePadding{};
+    short insidePadding{};
     
     short verticalTextSpace{};
     short horizontalTextSpace{};
+};
+
+struct Title {
+    TitleBox box{};
+
+    Point topLeft{};
+
+    std::string text{};
+    textsettingstype textSettings{};
 };
 
 struct BoardProperties {
@@ -40,17 +56,28 @@ struct PieceProperties {
     fillsettingstype fillSettings{};
 };
 
-TitleProperties initTitleProperties (short verticalSize, short outsidePadding, short insidePadding, short xAxisLength) {
-    TitleProperties titleProperties{};
-    
-    titleProperties.totalVerticalSize = verticalSize;
-    titleProperties.outsidePadding = outsidePadding;
-    titleProperties.insidePadding = insidePadding;
-    
-    titleProperties.verticalTextSpace = static_cast<short>(verticalSize - 2 * titleProperties.insidePadding);
-    titleProperties.horizontalTextSpace = static_cast<short>((xAxisLength - 2 * titleProperties.outsidePadding) - 2 * titleProperties.insidePadding);
-    
-    return titleProperties;
+TitleBox initTitleBox (short verticalSize, short outsidePadding, short insidePadding, const Window& window) {
+    TitleBox titleBox{ .totalVerticalSize = verticalSize, .outsidePadding = outsidePadding, .insidePadding = insidePadding, };
+
+    titleBox.verticalTextSpace = static_cast<short>(verticalSize - 2 * titleBox.insidePadding);
+    titleBox.horizontalTextSpace = static_cast<short>((window.xAxisLength - 2 * titleBox.outsidePadding) - 2 * titleBox.insidePadding);
+
+    return titleBox;
+}
+
+Title initTitle (TitleBox titleBox, const std::string& text, textsettingstype textSettings) {
+    Title title { .box = titleBox, .text = text, .textSettings = textSettings };
+
+    textsettingstype initialTextSettings{};
+    gettextsettings(&initialTextSettings);
+    settextstyle(title.textSettings.font, title.textSettings.direction, title.textSettings.charsize);
+
+    title.topLeft.x = static_cast<short>(title.box.outsidePadding + title.box.insidePadding + (title.box.horizontalTextSpace - textwidth(const_cast<char*>(title.text.c_str()))) / 2);
+    title.topLeft.y = static_cast<short>(title.box.outsidePadding + title.box.insidePadding + (title.box.verticalTextSpace - textheight(const_cast<char*>(title.text.c_str()))) / 2);
+
+    settextstyle(initialTextSettings.font, initialTextSettings.direction, initialTextSettings.charsize);
+
+    return title;
 }
 
 BoardProperties initBoardProperties (short numOfTilesOnSide, short tileSize, short tilePadding, short padding) {
@@ -63,7 +90,7 @@ BoardProperties initBoardProperties (short numOfTilesOnSide, short tileSize, sho
     return boardProperties;
 }
 
-Board initBoard (BoardProperties boardProperties, TitleProperties titleProperties, short xAxisLength) {
+Board initBoard (BoardProperties boardProperties, TitleBox titleProperties, short xAxisLength) {
     Board board { .properties = boardProperties };
 
     board.topLeft = { static_cast<short>((xAxisLength - boardProperties.size) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + boardProperties.padding)) };
@@ -112,7 +139,7 @@ void drawBoard (Board board) {
     }
 }
 
-short getMaxTitleSize (const char* title, TitleProperties titleProperties, textsettingstype textSettings) {
+short getMaxTitleSize (const char* text, TitleBox titleBox, textsettingstype textSettings) {
     constexpr short maxCharSize { 10 };
 
     textsettingstype initialTextSettings{};
@@ -122,7 +149,7 @@ short getMaxTitleSize (const char* title, TitleProperties titleProperties, texts
     for (short i = 1; i <= maxCharSize; i++) {
         settextstyle(textSettings.font, textSettings.direction, i);
 
-        if (textheight(const_cast<char*>(title)) <= (titleProperties.totalVerticalSize - 2 * titleProperties.insidePadding)) {
+        if (textheight(const_cast<char*>(text)) <= (titleBox.totalVerticalSize - 2 * titleBox.insidePadding)) {
             maxTitleCharSize = i;
         }
         else {
@@ -136,56 +163,41 @@ short getMaxTitleSize (const char* title, TitleProperties titleProperties, texts
 }
 
 int main() {
-    // Window Properties
-    constexpr short xAxisLength { 1280 };
-    constexpr short yAxisLength { 720 };
-    constexpr char title[] { "Jocul Patratelor Glisante" };
+    using namespace std::literals;
+
+    // Create window
+    const Window window { 1280, 720, "Jocul Patratelor Glisante"s };
+    initwindow(window.xAxisLength, window.yAxisLength, window.title.c_str());
 
     // Title Properties
-    const TitleProperties titleProperties { initTitleProperties(100, 20, 5, xAxisLength) };
+    const TitleBox titleBox { initTitleBox(100, 20, 5, window) };
+
+    textsettingstype titleTextSettings { .font = SANS_SERIF_FONT, .direction = HORIZ_DIR };
+    titleTextSettings.charsize = getMaxTitleSize(window.title.c_str(), titleBox, titleTextSettings);
+    const Title title { initTitle(titleBox, window.title, titleTextSettings) };
 
     // Board Properties
     constexpr short numOfTilesOnSide { 5 };
 
-    // Other setup
-    const short minBoardPadding { titleProperties.outsidePadding };
-    const short maxBoardSize { static_cast<short>(yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize + 2 * minBoardPadding)) };
+    const short minBoardPadding { title.box.outsidePadding };
+    const short maxBoardSize { static_cast<short>(window.yAxisLength - (title.box.outsidePadding + title.box.totalVerticalSize + 2 * minBoardPadding)) };
     const short maxTileSize { static_cast<short>(maxBoardSize / numOfTilesOnSide) };
 
     const short minTileSize { 80 };
     const short minBoardSize { static_cast<short>(numOfTilesOnSide * minTileSize) };
-    const short maxBoardPadding { static_cast<short>((yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize) - minBoardSize) / 2) };
+    const short maxBoardPadding { static_cast<short>((window.yAxisLength - (title.box.outsidePadding + title.box.totalVerticalSize) - minBoardSize) / 2) };
 
-    const Board smallestBoard { initBoard(initBoardProperties(numOfTilesOnSide, minTileSize, 4, maxBoardPadding), titleProperties, xAxisLength) };
-    const Board largestBoard { initBoard(initBoardProperties(numOfTilesOnSide, maxTileSize, 4, minBoardPadding), titleProperties, xAxisLength) };
-
-    /*
-    const short tileSize { 80 };
-
-    const short boardSize { numOfTilesOnSide * tileSize };
-    const short boardPadding { static_cast<short>((yAxisLength - (titleProperties.outsidePadding + titleProperties.totalVerticalSize) - boardSize) / 2) };
-*/
-
-    // Create window
-    initwindow(xAxisLength, yAxisLength, title);
-    std::cout << "Window has been created!\n";
+    const Board smallestBoard { initBoard(initBoardProperties(numOfTilesOnSide, minTileSize, 4, maxBoardPadding), title.box, window.xAxisLength) };
+    const Board largestBoard { initBoard(initBoardProperties(numOfTilesOnSide, maxTileSize, 4, minBoardPadding), title.box, window.xAxisLength) };
 
     // Draw title
-    // rectangle(titleProperties.outsidePadding, titleProperties.outsidePadding, xAxisLength - titleProperties.outsidePadding, titleProperties.totalVerticalSize + titleProperties.outsidePadding);
-
-    textsettingstype textSettings { .font = SANS_SERIF_FONT, .direction = HORIZ_DIR };
-    short maxTitleCharSize{ getMaxTitleSize(title, titleProperties, textSettings) };
-
-    settextstyle(textSettings.font, textSettings.direction, maxTitleCharSize);
-
-    Point titleTopLeft {};
-    titleTopLeft.x = static_cast<short>(titleProperties.outsidePadding + titleProperties.insidePadding + (titleProperties.horizontalTextSpace - textwidth(const_cast<char*>(title))) / 2);
-    titleTopLeft.y = static_cast<short>(titleProperties.outsidePadding + titleProperties.insidePadding + (titleProperties.verticalTextSpace - textheight(const_cast<char*>(title))) / 2);
-    outtextxy(titleTopLeft.x, titleTopLeft.y, const_cast<char*>(title));
+    settextstyle(title.textSettings.font, title.textSettings.direction, title.textSettings.charsize);
+    outtextxy(title.topLeft.x, title.topLeft.y, const_cast<char*>(title.text.c_str()));
 
     // Draw board
     drawBoard(largestBoard);
 
+    // Close window
     getch();
     closegraph();
 
