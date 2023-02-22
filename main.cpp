@@ -54,6 +54,25 @@ struct Piece {
     fillsettingstype fillSettings{};
 };
 
+enum pieces {
+    playerOne = 1,
+    playerTwo = 2,
+    empty = 0
+};
+
+struct GameStatus {
+    Point emptySpace{};
+};
+
+struct PlayerPreferences {
+    fillsettingstype player1{};
+    fillsettingstype player2{};
+};
+
+enum directions {
+    left, up, right, down
+};
+
 TitleBox getTitleBox (int verticalSize, int outsidePadding, int insidePadding, const Window& window) {
     TitleBox titleBox{ .verticalSize = verticalSize, .outsidePadding = outsidePadding, .insidePadding = insidePadding, };
 
@@ -117,7 +136,7 @@ void drawPiece (const Piece& piece) {
     setfillstyle(currentFillSettings.pattern, currentFillSettings.color);
 }
 
-void drawBoard (const Board& board) {
+void drawBoard (const Board& board, pieces matrix[][5], const PlayerPreferences& playerPreferences) {
     for (int rowNum { 1 }; rowNum <= board.tilesOnSide; rowNum++) {
         for (int colNum { 1 }; colNum <= board.tilesOnSide; colNum++) {
             Point tileTopLeft {board.topLeft.x + (colNum - 1) * board.tileSize, board.topLeft.y + (rowNum - 1) * board.tileSize };
@@ -126,7 +145,12 @@ void drawBoard (const Board& board) {
             // Draw tile
             rectangle(tileTopLeft.x, tileTopLeft.y, tileBottomRight.x, tileBottomRight.y);
 
-            drawPiece(getPiece(tileTopLeft, {SOLID_FILL, LIGHTBLUE}, board));
+            // Draw piece
+            if (matrix[rowNum - 1][colNum - 1] == empty) {
+                continue;
+            }
+
+            drawPiece(getPiece(tileTopLeft, matrix[rowNum - 1][colNum - 1] == playerOne ? playerPreferences.player1 : playerPreferences.player2, board));
         }
     }
 }
@@ -152,6 +176,48 @@ int getMaxTitleSize (const char* text, TitleBox titleBox, textsettingstype textS
     settextstyle(initialTextSettings.font, initialTextSettings.direction, initialTextSettings.charsize);
 
     return maxTitleCharSize;
+}
+
+bool isInBounds (const Board& board, const Point& position) {
+    if (position.x < 0 || position.x >= board.tilesOnSide) {
+        return false;
+    }
+    if (position.y < 0 || position.y >= board.tilesOnSide) {
+        return false;
+    }
+
+    return true;
+}
+
+bool isOccupied (pieces matrix[][5], const Point& position) {
+    return matrix[position.x][position.y] != empty;
+}
+
+bool canMoveInDirection (const Board& board, pieces matrix[][5], const Point& from, const directions& direction) {
+    Point to {};
+    switch (direction) {
+        case left:
+            to = { from.x - 1, from.y };
+            break;
+        case up:
+            to = { from.x, from.y - 1 };
+            break;
+        case right:
+            to = { from.x + 1, from.y };
+            break;
+        case down:
+            to = { from.x, from.y + 1 };
+            break;
+    }
+
+    if (!isInBounds(board, to)) {
+        return false;
+    }
+    if (isOccupied(matrix, to)) {
+        return false;
+    }
+
+    return true;
 }
 
 int main() {
@@ -182,12 +248,33 @@ int main() {
     const Board smallestBoard { getBoard(numOfTilesOnSide, minTileSize, 20, maxBoardPadding, title.box, window) };
     const Board largestBoard { getBoard(numOfTilesOnSide, maxTileSize, 20, minBoardPadding, title.box, window) };
 
+    // Player preferences
+    PlayerPreferences playerPreferences { {SOLID_FILL, LIGHTRED}, {SOLID_FILL, LIGHTBLUE} };
+
     // Draw title
     settextstyle(title.drawableText.settings.font, title.drawableText.settings.direction, title.drawableText.settings.charsize);
     outtextxy(title.drawableText.topLeft.x, title.drawableText.topLeft.y, const_cast<char*>(title.drawableText.text.c_str()));
 
+    // Create game status
+    GameStatus gameStatus{ .emptySpace { numOfTilesOnSide / 2, numOfTilesOnSide / 2 } };
+
+    // Create board matrix
+    pieces boardMatrix[numOfTilesOnSide][numOfTilesOnSide];
+    pieces nextPiece { playerOne };
+    for (int i = 0; i < numOfTilesOnSide; i++) {
+        for (int j = 0; j < numOfTilesOnSide; j++) {
+            if (i == gameStatus.emptySpace.x && j == gameStatus.emptySpace.y) {
+                boardMatrix[i][j] = empty;
+            }
+            else {
+                boardMatrix[i][j] = nextPiece;
+            }
+            nextPiece = nextPiece == playerOne ? playerTwo : playerOne;
+        }
+    }
+
     // Draw board
-    drawBoard(largestBoard);
+    drawBoard(largestBoard, boardMatrix, playerPreferences);
 
     // Close window
     getch();
