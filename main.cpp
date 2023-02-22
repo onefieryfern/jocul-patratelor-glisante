@@ -34,16 +34,11 @@ struct Title {
 
 struct BoardProperties {
     short size{};
-    short numOfTilesOnSide{};
+    short padding{};
 
+    short numOfTilesOnSide{};
     short tileSize{};
     short tilePadding{};
-
-    short padding{};
-};
-
-struct Board {
-    BoardProperties properties{};
 
     Point topLeft{};
 };
@@ -80,22 +75,14 @@ Title initTitle (TitleBox titleBox, const std::string& text, textsettingstype te
     return title;
 }
 
-BoardProperties initBoardProperties (short numOfTilesOnSide, short tileSize, short tilePadding, short padding) {
-    BoardProperties boardProperties { .numOfTilesOnSide = numOfTilesOnSide, .tileSize = tileSize, .tilePadding = tilePadding, .padding = padding };
+BoardProperties initBoardProperties (short numOfTilesOnSide, short tileSize, short tilePadding, short padding, const TitleBox& titleBox, const Window& window) {
+    BoardProperties boardProperties { .padding = padding, .numOfTilesOnSide = numOfTilesOnSide, .tileSize = tileSize, .tilePadding = tilePadding };
 
     boardProperties.size = static_cast<short>(numOfTilesOnSide * tileSize);
 
-    // boardProperties.topLeft = { static_cast<short>((xAxisLength - boardProperties.size) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + boardProperties.padding)) };
+    boardProperties.topLeft = { static_cast<short>((window.xAxisLength - boardProperties.size) / 2), static_cast<short>((titleBox.outsidePadding + titleBox.totalVerticalSize + boardProperties.padding)) };
 
     return boardProperties;
-}
-
-Board initBoard (BoardProperties boardProperties, TitleBox titleProperties, short xAxisLength) {
-    Board board { .properties = boardProperties };
-
-    board.topLeft = { static_cast<short>((xAxisLength - boardProperties.size) / 2), static_cast<short>((titleProperties.outsidePadding + titleProperties.totalVerticalSize + boardProperties.padding)) };
-
-    return board;
 }
 
 PieceProperties initPieceProperties (Point topLeft, fillsettingstype fillSettings, BoardProperties boardProperties) {
@@ -125,16 +112,16 @@ void drawPiece (PieceProperties pieceProperties) {
     setfillstyle(currentFillSettings.pattern, currentFillSettings.color);
 }
 
-void drawBoard (Board board) {
-    for (short rowNum { 1 }; rowNum <= board.properties.numOfTilesOnSide; rowNum++) {
-        for (short colNum { 1 }; colNum <= board.properties.numOfTilesOnSide; colNum++) {
-            Point tileTopLeft {static_cast<short>(board.topLeft.x + (colNum - 1) * board.properties.tileSize), static_cast<short>(board.topLeft.y + (rowNum - 1) * board.properties.tileSize) };
-            Point tileBottomRight {static_cast<short>(board.topLeft.x + colNum * board.properties.tileSize), static_cast<short>(board.topLeft.y + rowNum * board.properties.tileSize) };
+void drawBoard (BoardProperties board) {
+    for (short rowNum { 1 }; rowNum <= board.numOfTilesOnSide; rowNum++) {
+        for (short colNum { 1 }; colNum <= board.numOfTilesOnSide; colNum++) {
+            Point tileTopLeft {static_cast<short>(board.topLeft.x + (colNum - 1) * board.tileSize), static_cast<short>(board.topLeft.y + (rowNum - 1) * board.tileSize) };
+            Point tileBottomRight {static_cast<short>(board.topLeft.x + colNum * board.tileSize), static_cast<short>(board.topLeft.y + rowNum * board.tileSize) };
 
             // Draw tile
             rectangle(tileTopLeft.x, tileTopLeft.y, tileBottomRight.x, tileBottomRight.y);
 
-            drawPiece(initPieceProperties(tileTopLeft, {SOLID_FILL, LIGHTBLUE }, initBoardProperties(board.properties.numOfTilesOnSide, board.properties.tileSize, board.properties.padding, 4)));
+            drawPiece(initPieceProperties(tileTopLeft, {SOLID_FILL, LIGHTBLUE }, board));
         }
     }
 }
@@ -187,8 +174,8 @@ int main() {
     const short minBoardSize { static_cast<short>(numOfTilesOnSide * minTileSize) };
     const short maxBoardPadding { static_cast<short>((window.yAxisLength - (title.box.outsidePadding + title.box.totalVerticalSize) - minBoardSize) / 2) };
 
-    const Board smallestBoard { initBoard(initBoardProperties(numOfTilesOnSide, minTileSize, 4, maxBoardPadding), title.box, window.xAxisLength) };
-    const Board largestBoard { initBoard(initBoardProperties(numOfTilesOnSide, maxTileSize, 4, minBoardPadding), title.box, window.xAxisLength) };
+    const BoardProperties smallestBoard { initBoardProperties(numOfTilesOnSide, minTileSize, 20, maxBoardPadding, title.box, window) };
+    const BoardProperties largestBoard { initBoardProperties(numOfTilesOnSide, maxTileSize, 20, minBoardPadding, title.box, window) };
 
     // Draw title
     settextstyle(title.textSettings.font, title.textSettings.direction, title.textSettings.charsize);
