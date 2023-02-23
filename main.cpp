@@ -70,8 +70,10 @@ struct PlayerPreferences {
 };
 
 enum directions {
-    left, up, right, down
+    left = 0, up = 1, right = 2, down = 3
 };
+
+Point movementInstructions[4] { {-1, 0}, {0, -1}, {+1, 0}, {0, +1} };
 
 TitleBox getTitleBox (int verticalSize, int outsidePadding, int insidePadding, const Window& window) {
     TitleBox titleBox{ .verticalSize = verticalSize, .outsidePadding = outsidePadding, .insidePadding = insidePadding, };
@@ -194,21 +196,7 @@ bool isOccupied (pieces matrix[][5], const Point& position) {
 }
 
 bool canMoveInDirection (const Board& board, pieces matrix[][5], const Point& from, const directions& direction) {
-    Point to {};
-    switch (direction) {
-        case left:
-            to = { from.x - 1, from.y };
-            break;
-        case up:
-            to = { from.x, from.y - 1 };
-            break;
-        case right:
-            to = { from.x + 1, from.y };
-            break;
-        case down:
-            to = { from.x, from.y + 1 };
-            break;
-    }
+    Point to { from.x + movementInstructions[direction].x, from.y + movementInstructions[direction].y };
 
     if (!isInBounds(board, to)) {
         return false;
